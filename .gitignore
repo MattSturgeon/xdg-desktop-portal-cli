@@ -1,0 +1,6 @@
+.vscode
+
+.flatpak-builder/
+portal-wrapper
+/build
+/out

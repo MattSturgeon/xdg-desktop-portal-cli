@@ -1,0 +1,44 @@
+app-id: org.github.MattSturgeon.PortalWrapper
+runtime: org.freedesktop.Platform
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+- org.freedesktop.Sdk.Extension.vala
+runtime-version: '21.08'
+command: bash
+build-options:
+  prefix: /app
+  prepend-path: /usr/lib/sdk/vala/bin/
+  prepend-ld-library-path: /usr/lib/sdk/vala/lib
+
+cleanup:
+  - /include
+  - /lib/*.a
+  - /lib/*.la
+  - /lib/pkgconfig
+
+modules:
+  - name: wrapper
+    buildsystem: autotools
+    no-autogen: true
+    build-options:
+      env:
+        PREFIX: /app
+    sources:
+      - type: dir
+        path: .
+    modules:
+    - name: libportal
+      buildsystem: meson
+      builddir: true
+      config-opts:
+      - --libdir=/app/lib
+      - --buildtype=debugoptimized
+      - -Dbackends=gtk3
+      - -Dintrospection=false
+      - -Dvapi=false
+      - -Ddocs=false
+      sources:
+      - type: archive
+        url: "https://github.com/flatpak/libportal/releases/download/0.6/libportal-0.6.tar.xz"
+        sha256: 88a12c3ba71bc31acff7238c280de697d609cebc50830c3766776ec35abc6566
+
