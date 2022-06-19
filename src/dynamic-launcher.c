@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <glib.h>
 #include <gio/gio.h>
+#include <libportal/portal.h>
 
 #define HELP_SUMMARY \
     "The DynamicLauncher portal allows sandboxed (or unsandboxed) applications to install launchers (.desktop files) which have an icon associated with them\n" \
@@ -54,67 +55,179 @@ static GOptionEntry entries[] =
         {NULL}
     };
 
+static XdpPortal *portal = NULL;
+static GMainLoop *loop = NULL;
 
+// Datatype used to pass data from install() to install_callback()
+typedef struct _InstallCallbackData{
+    // TODO Consider what data needs to be passed to callback(s)
+    gchar* desktop_entry_id;
+    gchar* desktop_entry_content;
+} InstallCallbackData;
 
-GVariant* load_icon(char* filename, GError *error) {
+// Loads the icon into memory and serializes it into a GVariant
+GVariant* load_icon(char* filename, GError **error) {
+    // Load the icon
+    // TODO add some checks to make sure we don't load a ridiculously big icon into memory
     GError *internal_error = NULL;
+    gchar *etag;
     GFile *file = g_file_new_for_path(filename);
-    
-    // TODO check file is valid
-    GFileInfo *info = g_file_query_info(file, G_FILE_ATTRIBUTE_STANDARD_SIZE, 0, NULL, &internal_error);
-    
-    // Check for errors:
-    if (info == NULL) {
-        g_printerr("Looks like file info query failed... Error: %s\n", internal_error->message);
-        error=internal_error;
-        return NULL;
-    } else if (!g_file_info_has_attribute(info, G_FILE_ATTRIBUTE_STANDARD_SIZE)) {
-        g_printerr("Hmmm, something went wrong. Icon file has no size attribute!\n");
-        error = internal_error;
+    GBytes *bytes = g_file_load_bytes(file, NULL, &etag, &internal_error);
+    if (internal_error != NULL) {
+        g_printerr("Error loading file into memory: %s\n", internal_error->message);
+        *error = internal_error;
+
+        g_bytes_unref(bytes);
+        g_object_unref(file);
         return NULL;
     }
-    
-    g_print("Icon file size is %s\n", g_file_info_get_attribute_as_string(info, G_FILE_ATTRIBUTE_STANDARD_SIZE));
+    g_print("File loaded... etag: %s\n", etag);
+    g_print("%d bytes read\n", g_bytes_get_size(bytes));
     
     // Serialize the icon
-    GIcon *icon = g_file_icon_new(file);
+    GIcon *icon = g_bytes_icon_new(bytes);
     if (icon == NULL) {
         g_printerr("Error loading file as icon...\n");
-        // TODO set error
+        // TODO set returned error
+
+        g_bytes_unref(bytes);
+        g_object_unref(file);
         return NULL;
     }
     GVariant* serialized_icon = g_icon_serialize(icon);
 
+    g_print("Icon serialized successfully\n");
+
     g_object_unref(icon);
-    g_object_unref(info);
+    g_bytes_unref(bytes);
     g_object_unref(file);
 
     return serialized_icon;
 }
 
-int install(gchar* desktop_entry_id, gchar* name, gchar* icon_filename, gchar* desktop_entry_content, gboolean name_editable, gboolean icon_editable) {
-    g_printerr("Error: install command is not implemented yet!\n");
-    return 1;
+// This callback is run by libportal when the user has confirmed or cancelled installing the desktop entry
+static void install_callback (void *source, GAsyncResult *result, InstallCallbackData *data) {
+    // Get result
+    g_print("Calling xdp_portal_dynamic_launcher_prepare_install_finish()\n");
+    GError *error = NULL;
+    GVariant *result_v = xdp_portal_dynamic_launcher_prepare_install_finish(portal, result, &error);
+    if (error != NULL) {
+        g_printerr("prepare_install_finish returned an error: %s\n", error->message);
+        free(data);
+        exit(1);
+    }
+
+    // result_v is a dictionary with "name", "token" and "icon"
+    GVariant *name_v = g_variant_lookup_value(result_v, "name", G_VARIANT_TYPE_STRING);
+    GVariant *token_v = g_variant_lookup_value(result_v, "token", G_VARIANT_TYPE_STRING);
+    if (name_v == NULL) {
+        g_printerr("prepare_install did not return a \"name\"...\n");
+        free(data);
+        g_variant_unref(result_v);
+        exit(1);
+    }
+    if (token_v == NULL) {
+        g_printerr("prepare_install did not return a \"token\"...\n");
+        free(data);
+        g_variant_unref(result_v);
+        exit(1);
+    }
+
+    const gchar *name = g_variant_get_string(name_v, NULL);
+    const gchar *token = g_variant_get_string(token_v, NULL);
+
+    // Done with these GVariants now
+    g_variant_unref(result_v);
+    g_variant_unref(name_v);
+    g_variant_unref(token_v);
+
+    g_print("token: %s\ndesktop_entry_name: %s\ndesktop_entry_id: %s\ndesktop_entry_content: %s\n",
+    token, name, data->desktop_entry_id, data->desktop_entry_content);
+
+    // Install desktop entry via libportal
+    g_print("Calling xdp_portal_dynamic_launcher_install()\n");
+    xdp_portal_dynamic_launcher_install(
+        portal,
+        token,
+        data->desktop_entry_id,
+        data->desktop_entry_content,
+        &error
+    );
+
+    if (error != NULL) {
+        g_printerr("Unable to install desktop entry... Error: %s\n", error->message);
+        free(data);
+        exit(1);
+    }
+
+    g_print("Successfully installed desktop entry \"%s\"\n", data->desktop_entry_id);
+    free(data);
+    g_main_loop_quit(loop);
 }
 
-int uninstall(gchar* desktop_entry_id) {
+void install(gchar* desktop_entry_id, gchar* name, gchar* icon_filename, gchar* desktop_entry_content, gboolean name_editable, gboolean icon_editable) {
+    GError *error = NULL;
+    // Check for valid options
+    // TODO - name, filename, etc must be set
+    // TODO check for up to one option bein "-" (read from stdin)
+
+    // Populate callback data
+    // Assigning heap memory so we can keep data around until the callback runs
+    InstallCallbackData *data = malloc(sizeof (InstallCallbackData));
+    if (data == NULL) {
+        g_printerr("Error allocating memory for install callback data\n");
+        exit(1);
+    }
+    data->desktop_entry_id = desktop_entry_id;
+    data->desktop_entry_content = desktop_entry_content;
+
+    // Load icon and serialize it
+    GVariant *icon_v = load_icon(icon_filename, &error);
+
+    if (icon_v == NULL) {
+        g_printerr("Error serializing icon");
+        exit(1);
+    }
+
+    // Ask libportal for a token to install the desktop entry
+    // This will open a dialog asking the user to confirm (and possibly edit name/icon)
+    // When the dialog is closed, install_callback() will be run
+    // data will be passed to install_callback(), along with the chosen name & icon.
+    xdp_portal_dynamic_launcher_prepare_install(
+        portal,
+        NULL, // parent
+        name,
+        icon_v,
+        XDP_LAUNCHER_APPLICATION, // TODO XDP_LAUNCHER_WEBAPP option
+        NULL, // TODO XDP_LAUNCHER_WEBAPP option
+        name_editable,
+        icon_editable,
+        NULL, // cancellable
+        (GAsyncReadyCallback) install_callback,
+        data
+    );
+
+    g_variant_unref(icon_v);
+}
+
+void uninstall(gchar* desktop_entry_id) {
     g_printerr("Error: uninstall command is not implemented yet!\n");
-    return 1;
+    exit(1);
 }
 
-int get_desktop_entry(gchar* desktop_entry_id) {
+void get_desktop_entry(gchar* desktop_entry_id) {
     g_printerr("Error: get command is not implemented yet!\n");
-    return 1;
+    exit(1);
 }
 
-int get_icon_from_desktop_entry(gchar* desktop_entry_id, gchar* icon_filename) {
+void get_icon_from_desktop_entry(gchar* desktop_entry_id, gchar* icon_filename) {
     g_printerr("Error: geticon command is not implemented yet!\n");
-    return 1;
+    exit(1);
 }
 
-int launch_desktop_entry(gchar* desktop_entry_id) {
+void launch_desktop_entry(gchar* desktop_entry_id) {
     g_printerr("Error: launch command is not implemented yet!\n");
-    return 1;
+    exit(1);
 }
 
 int main(int argc, char *argv[])
@@ -144,22 +257,32 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    // Get an instance of XdpPortal
+    portal = xdp_portal_new();
+
     // Run the relevent command, passing in relevent options
     gchar* command = g_ascii_strdown(g_strstrip(argv[1]), -1);
     if (strcmp(command, "install")==0) {
-        return install(entry_id, entry_name, icon_filename, entry, name_editable, icon_editable);
+        install(entry_id, entry_name, icon_filename, entry, name_editable, icon_editable);
     } else if (strcmp(command, "uninstall")==0) {
-        return uninstall(entry_id);
+        uninstall(entry_id);
     } else if (strcmp(command, "get")==0) {
-        return get_desktop_entry(entry_id);
+        get_desktop_entry(entry_id);
     } else if (strcmp(command, "geticon")==0) {
-        return get_icon_from_desktop_entry(entry_id, icon_filename);
+        get_icon_from_desktop_entry(entry_id, icon_filename);
     } else if (strcmp(command, "launch")==0) {
-        return launch_desktop_entry(entry_id);
+        launch_desktop_entry(entry_id);
     } else {
         g_printerr("Error: Unrecognised command \"%s\"\n", argv[1]);
         return 1;
     }
+
+    // Run the main event loop:
+    g_print("Running the main event loop\n");
+    loop = g_main_loop_new(NULL, FALSE);
+    g_main_loop_run(loop);
+
+    // Anything here will runn after g_main_loop_quit(loop)
 
     return 0;
 }
