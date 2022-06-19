@@ -184,8 +184,14 @@ void install(gchar* desktop_entry_id, gchar* name, gchar* icon_filename, gchar* 
     // Load icon and serialize it
     GVariant *icon_v = load_icon(icon_filename, &error);
 
-    if (icon_v == NULL) {
+    if (error != NULL) {
+        g_printerr("Error serializing icon: %s", error->message);
+        free(data);
+        exit(1);
+    } else if (icon_v == NULL) {
+        // FIXME this second case shouldn't be needed, but load_icon() doesn't set error in all cases yet!
         g_printerr("Error serializing icon");
+        free(data);
         exit(1);
     }
 
