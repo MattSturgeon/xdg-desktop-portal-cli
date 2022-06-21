@@ -1,0 +1,11 @@
+[default]
+name=Default
+runtime=flatpak:org.freedesktop.Platform/x86_64/21.08
+toolchain=default
+config-opts=
+run-opts=
+prefix=/app
+app-id=org.github.MattSturgeon.xdg_desktop_portal_cli
+postbuild=
+prebuild=
+default=true
