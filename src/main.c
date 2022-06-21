@@ -17,12 +17,50 @@
  */
 
 #include "config.h"
+#include "command.h"
 
 #include <glib.h>
 #include <stdlib.h>
 
+// Caller is responsible for freeing returned array
+gchar** split(gint start, gint length, gchar *array[])
+{
+    gsize size = length * sizeof(gchar*);
+    gchar **copy = malloc(size);
+    if (copy == NULL) {
+      /* handle error */
+    }
+
+    memcpy(copy, array + start, size);
+    return copy;
+}
+
 gint main (gint   argc, gchar *argv[])
 {
+    if (argc < 2)
+    {
+        g_printerr("Not enough arguments\n");
+        return EXIT_FAILURE;
+    }
+
+    // Looks like argv[1] is portal, copy the rest of the args to give to the handler
+    gsize size = (argc - 2) * sizeof(gchar*);
+    gchar **copy = malloc(size);
+    if (copy == NULL) {
+        g_printerr ("Error copying arguments into smaller array\n");
+        return EXIT_FAILURE;
+    }
+    memcpy(copy, argv + 2, size);
+
+    Portal *portal = get_portal_from_string(argv[1]);
+    if (portal == NULL)
+    {
+        g_printerr ("Unrecognised command \"%s\"\n", argv[1]);
+        return EXIT_FAILURE;
+    }
+    Command *command = call_portal_handler(portal, argc - 2, copy);
+    /*
+
   g_autoptr(GOptionContext) context = NULL;
   g_autoptr(GError) error = NULL;
 
@@ -46,6 +84,8 @@ gint main (gint   argc, gchar *argv[])
       g_printerr ("%s\n", PACKAGE_VERSION);
       return EXIT_SUCCESS;
     }
+
+     */
 
   return EXIT_SUCCESS;
 }

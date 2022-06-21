@@ -1,10 +1,13 @@
 xdg_desktop_portal_cli_sources = [
   'main.c',
+  'command.c',
+  'dynamic-launcher.c',
 ]
 
 xdg_desktop_portal_cli_deps = [
   dependency('glib-2.0'),
-  # TODO libportal
+  dependency('gio-2.0'),
+  dependency('libportal', version: '>= 0.6'),
 ]
 
 executable('xdg-portal', xdg_desktop_portal_cli_sources,
