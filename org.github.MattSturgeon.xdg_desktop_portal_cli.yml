@@ -1,0 +1,40 @@
+---
+app-id: org.github.MattSturgeon.xdg_desktop_portal_cli
+runtime: org.freedesktop.Platform
+runtime-version: '21.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+- org.freedesktop.Sdk.Extension.vala
+command: /bin/bash
+cleanup:
+- "/include"
+- "/lib/pkgconfig"
+- "/man"
+- "/share/doc"
+- "/share/gtk-doc"
+- "/share/man"
+- "/share/pkgconfig"
+- "*.la"
+- "*.a"
+modules:
+- name: xdg-desktop-portal-cli
+  builddir: true
+  buildsystem: meson
+  sources:
+  - type: git
+    url: file:///home/matt/Documents/Development/xdg-desktop-portal-cli
+  modules:
+    - name: libportal
+      buildsystem: meson
+      builddir: true
+      config-opts:
+      - --libdir=/app/lib
+      - --buildtype=debugoptimized
+      - -Dbackends=gtk3
+      - -Dintrospection=false
+      - -Dvapi=false
+      - -Ddocs=false
+      sources:
+      - type: archive
+        url: "https://github.com/flatpak/libportal/releases/download/0.6/libportal-0.6.tar.xz"
+        sha256: 88a12c3ba71bc31acff7238c280de697d609cebc50830c3766776ec35abc6566

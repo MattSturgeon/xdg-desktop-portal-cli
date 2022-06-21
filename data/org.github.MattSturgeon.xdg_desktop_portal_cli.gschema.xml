@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="xdg-desktop-portal-cli">
+	<schema id="org.github.MattSturgeon.xdg_desktop_portal_cli" path="/org/github/MattSturgeon/xdg_desktop_portal_cli/">
+	</schema>
+</schemalist>
