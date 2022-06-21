@@ -14,7 +14,7 @@ config_h.set_quoted('PACKAGE_VERSION', meson.project_version())
 config_h.set_quoted('GETTEXT_PACKAGE', 'xdg-desktop-portal-cli')
 config_h.set_quoted('LOCALEDIR', join_paths(get_option('prefix'), get_option('localedir')))
 configure_file(
-  output: 'xdg_desktop_portal_cli-config.h',
+  output: 'config.h',
   configuration: config_h,
 )
 
