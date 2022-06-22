@@ -90,7 +90,7 @@ gint main (gint   argc, gchar *argv[])
     gsize size = copy_len * sizeof(gchar*);
     gchar **copy = malloc(size);
     if (copy == NULL) {
-        g_printerr ("Error copying arguments into smaller array\n");
+        g_printerr ("Error assigning memory to copy arguments into smaller array\n");
         return EXIT_FAILURE;
     }
     memcpy(copy, argv + 2, size);
@@ -101,7 +101,7 @@ gint main (gint   argc, gchar *argv[])
     if (portal == NULL)
     {
         g_printerr ("Unrecognised portal \"%s\"\n", argv[1]);
-        return EXIT_FAILURE;
+        goto failure;
     }
 
     if (copy_len < 1)
@@ -109,9 +109,10 @@ gint main (gint   argc, gchar *argv[])
         if (help) {
             // Show help for portal
             g_print("Would you like some %s-specific help?\n", get_portal_name(portal));
-            return EXIT_SUCCESS;
+            goto success;
         }
         g_printerr("You didn't specify a command!\n");
+        goto failure;
     }
 
     // Look for a command in portal that matches args
@@ -119,12 +120,12 @@ gint main (gint   argc, gchar *argv[])
     if (command == NULL)
     {
         g_printerr ("Unrecognised command \"%s\"\n", argv[2]);
-        return EXIT_FAILURE;
+        goto failure;
     }
     if (help)
     {
         g_print("Would you like some %s %s -specific help?\n", get_portal_name (portal), get_command_name(command));
-        return EXIT_SUCCESS;
+        goto success;
     }
 
     // Finally, run the command
@@ -134,6 +135,13 @@ gint main (gint   argc, gchar *argv[])
     gint status = call_command_handler(command, copy_len - 1, &copy[1], help);
 
     // TODO create an event loop if needed
+    free(copy);
+    return status;
 
-  return status;
+success:
+    free (copy);
+    return EXIT_SUCCESS;
+failure:
+    free (copy);
+    return EXIT_FAILURE;
 }
