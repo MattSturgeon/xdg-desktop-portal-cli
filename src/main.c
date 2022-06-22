@@ -37,14 +37,57 @@ gchar** split(gint start, gint length, gchar *array[])
 
 gint main (gint   argc, gchar *argv[])
 {
+    // Use GOptionContext to parse --option flags.
+    // We only care about --help and --version at this point,
+    // we'll let Portals and Commands parse again later.
+    g_autoptr(GOptionContext) context = NULL;
+    g_autoptr(GError) error = NULL;
+
+    gboolean help = FALSE;
+    gboolean version = FALSE;
+    GOptionEntry main_entries[] = {
+        { "help", 'h', 0, G_OPTION_ARG_NONE, &help, NULL, NULL },
+        { "help", '?', 0, G_OPTION_ARG_NONE, &help, NULL, NULL },
+        { "version", 0, 0, G_OPTION_ARG_NONE, &version, NULL, NULL },
+        { NULL }
+    };
+
+    context = g_option_context_new ("");
+    // We want to generate our own help page
+    g_option_context_set_help_enabled(context, FALSE);
+    // Ignore unknown options at this stage so that they can be parsed later
+    g_option_context_set_ignore_unknown_options(context, TRUE);
+    g_option_context_add_main_entries (context, main_entries, NULL);
+    if (!g_option_context_parse (context, &argc, &argv, &error))
+    {
+        g_printerr("%s\n", error->message);
+        return EXIT_FAILURE;
+    }
+
+    if (version)
+    {
+        g_print("%s\n", PACKAGE_VERSION);
+        return EXIT_SUCCESS;
+    }
+
     if (argc < 2)
     {
-        g_printerr("Not enough arguments\n");
+       if (help) {
+            g_print ("Help message...\n");
+           //FIXME: Generate a custom help message instead of GOptionContext
+            gchar *help_str = g_option_context_get_help(context, FALSE, NULL);
+            g_print("%s\n", help_str);
+            g_free(help_str);
+            return EXIT_SUCCESS;
+        }
+
+        g_printerr("You didn't specify a portal!\n");
         return EXIT_FAILURE;
     }
 
     // Looks like argv[1] is portal, copy the rest of the args to give to the handler
-    gsize size = (argc - 2) * sizeof(gchar*);
+    gsize copy_len = argc - 2;
+    gsize size = copy_len * sizeof(gchar*);
     gchar **copy = malloc(size);
     if (copy == NULL) {
         g_printerr ("Error copying arguments into smaller array\n");
@@ -52,40 +95,45 @@ gint main (gint   argc, gchar *argv[])
     }
     memcpy(copy, argv + 2, size);
 
+    //TODO Consider extracting this point onwards into command.c (so we can use Portal/Command struct members without creating accessor methods)
+    // Look for a portal that matches args
     Portal *portal = get_portal_from_string(argv[1]);
     if (portal == NULL)
     {
-        g_printerr ("Unrecognised command \"%s\"\n", argv[1]);
+        g_printerr ("Unrecognised portal \"%s\"\n", argv[1]);
         return EXIT_FAILURE;
     }
-    Command *command = call_portal_handler(portal, argc - 2, copy);
-    /*
 
-  g_autoptr(GOptionContext) context = NULL;
-  g_autoptr(GError) error = NULL;
-
-  gboolean version = FALSE;
-  GOptionEntry main_entries[] = {
-    { "version", 0, 0, G_OPTION_ARG_NONE, &version, "Show program version", NULL },
-    { NULL }
-  };
-
-  context = g_option_context_new ("- my command line tool");
-  g_option_context_add_main_entries (context, main_entries, NULL);
-
-  if (!g_option_context_parse (context, &argc, &argv, &error))
+    if (copy_len < 1)
     {
-      g_printerr ("%s\n", error->message);
-      return EXIT_FAILURE;
+        if (help) {
+            // Show help for portal
+            g_print("Would you like some %s-specific help?\n", get_portal_name(portal));
+            return EXIT_SUCCESS;
+        }
+        g_printerr("You didn't specify a command!\n");
     }
 
-  if (version)
+    // Look for a command in portal that matches args
+    Command *command = get_command_from_string (portal, copy[0]);
+    if (command == NULL)
     {
-      g_printerr ("%s\n", PACKAGE_VERSION);
-      return EXIT_SUCCESS;
+        g_printerr ("Unrecognised command \"%s\"\n", argv[2]);
+        return EXIT_FAILURE;
+    }
+    if (help)
+    {
+        g_print("Would you like some %s %s -specific help?\n", get_portal_name (portal), get_command_name(command));
+        return EXIT_SUCCESS;
     }
 
-     */
+    // Finally, run the command
+    // TODO have call_command_handler return an Enum(SUCCESS;FAILURE;LOOP) so we know whether to start an event loop
+    // FIXME this will segfault since I haven't defined any command handlers yet
+    // FIXME decide if help should be handled inside or outside the handler function
+    gint status = call_command_handler(command, copy_len - 1, &copy[1], help);
 
-  return EXIT_SUCCESS;
+    // TODO create an event loop if needed
+
+  return status;
 }

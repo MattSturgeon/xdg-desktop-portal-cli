@@ -2,4 +2,4 @@
 
 #include <glib.h>
 
-Command *dynamic_launcher_install(gint argc, gchar *argv[]); 
+gint *dynamic_launcher_install(gint argc, gchar *argv[], gboolean show_help); 

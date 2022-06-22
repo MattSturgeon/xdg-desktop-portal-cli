@@ -25,12 +25,12 @@ static Portal cli_sturcture[] = {
     {
         .name = "dynamic-launcher",
         .aliases = { "launcher", "desktop-entry" },
-        .handler = &dynamic_launcher_install,
         .help_text = "TODO: Copy paste from docs... describe what the dynamic-launcher portal does...",
         .commands = {
             {
                 .name = "install",
                 .help_text = "TODO: copy from docs... installs a desktop entry onto the host system...",
+                .handler = &dynamic_launcher_install,
                 .options = {
                     // TODO
                     { NULL },
@@ -101,14 +101,50 @@ Portal *get_portal_from_string(gchar* portal_string)
     return NULL;
 }
 
-Command *call_portal_handler(Portal *portal, gint argc, gchar** argv)
+Command *call_portal_handler(Portal *portal, gint argc, gchar** argv, gboolean show_help)
 {
-    return portal->handler(argc, argv);
+    return portal->handler(argc, argv, show_help);
 
 }
 
-gint call_command_handler(Command *command, gint argc, gchar** argv)
-{
-    return command->handler(argc, argv);
+gchar *get_portal_name(Portal *portal) {
+    return portal->name;
 }
 
+Command *get_command_from_string(Portal *portal, gchar *command_string)
+{
+    gchar* clean_command_string = g_ascii_strdown(g_strstrip(command_string), -1);
+    for (int i = 0; i < CLI_PORTAL_MAX_COMMANDS; i++)
+    {
+        if (portal->commands[i].name == NULL || portal->commands[i].name[0] == '\0')
+        {
+            g_printerr("Error: %s command at index %d does not have a name set\n", portal->name, i);
+        }
+        else if (strcmp(clean_command_string, portal->commands[i].name) == 0)
+        {
+            return &portal->commands[i];
+        }
+
+        for (int j = 0; j < CLI_MAX_ALIASES; j++)
+        {
+            if (portal->commands[i].aliases[j] == NULL || portal->commands[i].aliases[j][0] == '\0')
+            {
+                break;
+            }
+
+            if (strcmp(clean_command_string, portal->commands[i].aliases[j]) == 0)
+                return &portal->commands[i];
+        }
+    }
+    return NULL;
+}
+
+gint call_command_handler(Command *command, gint argc, gchar** argv, gboolean show_help)
+{
+    return command->handler(argc, argv, show_help);
+}
+
+gchar *get_command_name(Command *command)
+{
+    return command->name;
+}

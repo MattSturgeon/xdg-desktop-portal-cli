@@ -1,6 +1,7 @@
 #include "dynamic-launcher.h"
+#include "command.h"
 
-Command *dynamic_launcher_install(gint argc, gchar *argv[])
+gint *dynamic_launcher_install(gint argc, gchar *argv[], gboolean show_help)
 {
     g_print("Running dynamic launcher install with %d args\n", argc);
 
@@ -8,6 +9,13 @@ Command *dynamic_launcher_install(gint argc, gchar *argv[])
     {
         g_print("    [%d]: %s\n", i, argv[i]);
     }
+
+    if (show_help) {
+        g_print ("Handling --help from withing the Command handler...\n");
+
+    }
+
+
 
     return EXIT_SUCCESS;
 }
