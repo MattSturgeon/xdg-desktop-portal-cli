@@ -14,9 +14,11 @@ typedef gint (*CommandCallback)(gint, gchar*[], gboolean show_help);
 typedef Command* (*PortalCallback)(gint, gchar*[], gboolean show_help);
 
 Portal *get_portal_from_string(gchar* portal_string);
+gchar *get_help_from_portal(Portal *portal);
 Command *call_portal_handler(Portal *portal, gint argc, gchar** argv, gboolean show_help);
 gchar *get_portal_name(Portal *portal);
 
 Command *get_command_from_string(Portal *portal, gchar* command_string);
+gchar *get_help_from_command(Command *command);
 gint call_command_handler(Command *command, gint argc, gchar** argv, gboolean show_help);
 gchar *get_command_name(Command *command);

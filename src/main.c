@@ -108,7 +108,9 @@ gint main (gint   argc, gchar *argv[])
     {
         if (help) {
             // Show help for portal
-            g_print("Would you like some %s-specific help?\n", get_portal_name(portal));
+            gchar* help_text = get_help_from_portal(portal);
+            g_print("%s", help_text);
+            g_free(help_text);
             goto success;
         }
         g_printerr("You didn't specify a command!\n");

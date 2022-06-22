@@ -1,7 +1,7 @@
 #include "dynamic-launcher.h"
 #include "command.h"
 
-gint *dynamic_launcher_install(gint argc, gchar *argv[], gboolean show_help)
+gint dynamic_launcher_install(gint argc, gchar *argv[], gboolean show_help)
 {
     g_print("Running dynamic launcher install with %d args\n", argc);
 
