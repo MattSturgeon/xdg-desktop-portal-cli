@@ -9,7 +9,7 @@
 // Define our command callback function pointer
 // Takes any remaining argc & argv
 // Returns the exit status code
-typedef gint (*CommandCallback)(gint, gchar*[], gboolean show_help);
+typedef gint (*CommandCallback)(gint, gchar*[]);
 
 typedef struct _COMMAND {
     gchar* name;
@@ -24,7 +24,7 @@ typedef struct _COMMAND {
 // Function pointer to handle portal
 // Takes any remaining argc & argv
 // Returns the chosen command
-typedef Command* (*PortalCallback)(gint, gchar*[], gboolean show_help);
+typedef Command* (*PortalCallback)(gint, gchar*[]);
 
 typedef struct _PORTAL {
     gchar *name;
@@ -38,12 +38,12 @@ gchar *get_help();
 
 Portal *get_portal_from_string(gchar* portal_string);
 gchar *get_help_from_portal(Portal *portal);
-Command *call_portal_handler(Portal *portal, gint argc, gchar** argv, gboolean show_help);
+Command *call_portal_handler(Portal *portal, gint argc, gchar** argv);
 gchar *get_portal_name(Portal *portal);
 
 Command *get_command_from_string(Portal *portal, gchar* command_string);
 gchar *get_help_from_command(Command *command);
-gint call_command_handler(Command *command, gint argc, gchar** argv, gboolean show_help);
+gint call_command_handler(Command *command, gint argc, gchar** argv);
 gchar *get_command_name(Command *command);
 
 

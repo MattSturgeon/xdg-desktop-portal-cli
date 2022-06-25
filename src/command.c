@@ -233,9 +233,9 @@ gchar *get_help_from_portal(Portal *portal) {
     return return_string;
 }
 
-Command *call_portal_handler(Portal *portal, gint argc, gchar** argv, gboolean show_help)
+Command *call_portal_handler(Portal *portal, gint argc, gchar** argv)
 {
-    return portal->handler(argc, argv, show_help);
+    return portal->handler(argc, argv);
 
 }
 
@@ -336,6 +336,7 @@ Portal *get_command_owner(Command *command) {
             }
         }
     }
+    return NULL;
 }
 
 gchar *get_help_from_command(Command *command)
@@ -408,9 +409,9 @@ gchar *get_help_from_command(Command *command)
     return return_string;
 }
 
-gint call_command_handler(Command *command, gint argc, gchar** argv, gboolean show_help)
+gint call_command_handler(Command *command, gint argc, gchar** argv)
 {
-    return command->handler(argc, argv, show_help);
+    return command->handler(argc, argv);
 }
 
 gchar *get_command_name(Command *command)

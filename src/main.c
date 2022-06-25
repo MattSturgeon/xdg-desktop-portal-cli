@@ -18,6 +18,8 @@
 
 #include "config.h"
 #include "command.h"
+#include "event-loop.h"
+#include "xdg-portal.h"
 
 #include <glib.h>
 #include <stdlib.h>
@@ -131,13 +133,16 @@ gint main (gint   argc, gchar *argv[])
         goto success;
     }
 
-    // Finally, run the command
-    // TODO have call_command_handler return an Enum(SUCCESS;FAILURE;LOOP) so we know whether to start an event loop
-    // FIXME this will segfault since I haven't defined any command handlers yet
-    // FIXME decide if help should be handled inside or outside the handler function
-    gint status = call_command_handler(command, copy_len - 1, &copy[1], help);
+    // Get an instance of XdgPortal
+    init_xdg_portal();
 
-    // TODO create an event loop if needed
+    // Finally, run the command
+    // FIXME this will segfault since I haven't defined any command handlers yet
+    gint status = call_command_handler(command, copy_len - 1, &copy[1]);
+
+    // create an event loop if needed
+    start_loop();
+
     free(copy);
     return status;
 

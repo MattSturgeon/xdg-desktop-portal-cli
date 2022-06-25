@@ -1,5 +1,7 @@
 xdg_desktop_portal_cli_sources = [
   'main.c',
+  'xdg-portal.c',
+  'event-loop.c',
   'command.c',
   'dynamic-launcher.c',
 ]
