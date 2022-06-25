@@ -73,9 +73,7 @@ gint main (gint   argc, gchar *argv[])
     if (argc < 2)
     {
        if (help) {
-            g_print ("Help message...\n");
-           //FIXME: Generate a custom help message instead of GOptionContext
-            gchar *help_str = g_option_context_get_help(context, FALSE, NULL);
+            gchar *help_str = get_help();
             g_print("%s\n", help_str);
             g_free(help_str);
             return EXIT_SUCCESS;
@@ -97,6 +95,7 @@ gint main (gint   argc, gchar *argv[])
 
     //TODO Consider extracting this point onwards into command.c (so we can use Portal/Command struct members without creating accessor methods)
     // Look for a portal that matches args
+    gchar *help_text = NULL;
     Portal *portal = get_portal_from_string(argv[1]);
     if (portal == NULL)
     {
@@ -108,7 +107,7 @@ gint main (gint   argc, gchar *argv[])
     {
         if (help) {
             // Show help for portal
-            gchar* help_text = get_help_from_portal(portal);
+            help_text = get_help_from_portal(portal);
             g_print("%s", help_text);
             g_free(help_text);
             goto success;
@@ -126,7 +125,9 @@ gint main (gint   argc, gchar *argv[])
     }
     if (help)
     {
-        g_print("Would you like some %s %s -specific help?\n", get_portal_name (portal), get_command_name(command));
+        help_text = get_help_from_command(command);
+        g_print("%s", help_text);
+        g_free(help_text);
         goto success;
     }
 
