@@ -4,6 +4,8 @@
 #include "event-loop.h"
 #include "xdg-portal.h"
 
+#define UNUSED(x) x __attribute__((__unused__))
+
 static gboolean icon_editable = FALSE;
 static gboolean name_editable = FALSE;
 static gchar*   icon_filename = NULL;
@@ -167,7 +169,7 @@ gboolean str_ends_with(const gchar* str, const gchar* suffix)
 
 // This callback is run by libportal when the user has confirmed or cancelled
 // installing the desktop entry
-static void install_callback(void*                source,
+static void install_callback(void*                UNUSED(source),
                              GAsyncResult*        result,
                              InstallCallbackData* data)
 {
