@@ -280,7 +280,7 @@ GVariant* load_icon(char* filename, GError** error)
   return serialized_icon;
 }
 
-gint dynamic_launcher_install(gint argc, gchar* argv[], gboolean show_help)
+gint dynamic_launcher_install(gint argc, gchar* argv[])
 {
   GError* error            = NULL;
   gchar*  desktop_entry_id = NULL;
