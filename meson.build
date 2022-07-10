@@ -7,6 +7,9 @@ project('xdg-desktop-portal-cli', 'c',
                    ],
 )
 
+# Install git hooks during meson configure
+subdir('git-hooks')
+
 i18n = import('i18n')
 
 config_h = configuration_data()

@@ -1,0 +1,20 @@
+#!/bin/sh
+
+## Source: https://ortogonal.github.io/cpp/git-clang-format/
+  
+# Test clang-format  
+clangformatout=$(git clang-format --diff --staged -q --extensions "c,h")  
+  
+if [ "$clangformatout" != "" ]  
+then
+    >&2 echo "The new code that is added contains differences"
+    >&2 echo "against clang-format rules. Please fix it before"
+    >&2 echo "doing a commit!"
+    >&2 echo ""
+    >&2 echo "View errors using git clang-format --diff"
+    >&2 echo ""
+    >&2 echo "Fix formatting automatically using git clang-format"
+    >&2 echo "or git clang-format --staged then add the changes"
+    >&2 echo "using git add and try again"
+    exit 1
+fi
