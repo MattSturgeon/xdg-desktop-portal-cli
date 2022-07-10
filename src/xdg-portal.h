@@ -4,4 +4,4 @@
 
 void init_xdg_portal();
 
-XdpPortal *get_xdg_portal();
+XdpPortal* get_xdg_portal();
