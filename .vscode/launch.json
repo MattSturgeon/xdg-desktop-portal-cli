@@ -14,6 +14,19 @@
             ],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "Meson: Build all targets"
+        },
+        {
+            "name": "Debug --help launcher install",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/builddir/src/xdg-portal",
+            "args": [
+                "--help",
+                "launcher",
+                "install"
+            ],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Meson: Build all targets"
         }
     ]
 }

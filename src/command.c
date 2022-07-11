@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include "dynamic-launcher.h"
+#include "line-wrapper.h"
 
 static Portal* cli_sturcture[] = {
     &dynamic_launcher_portal,
@@ -288,7 +289,7 @@ Command* get_command_from_string(Portal* portal, gchar* command_string)
   return NULL;
 }
 
-unsigned short int get_columns()
+guint get_columns()
 {
   struct winsize ws;
   ioctl(STDIN_FILENO, TIOCGWINSZ, &ws);
@@ -316,7 +317,7 @@ gchar* get_help_from_command(Command* command)
 {
   gchar* prog_name =
       "xdg-portal";  // FIXME get from argv - maybe set a global in main.c?
-  gsize columns             = get_columns();
+  guint columns             = get_columns();
   g_autoptr(GString) string = NULL;
   string                    = g_string_sized_new(512);
 
@@ -350,6 +351,8 @@ gchar* get_help_from_command(Command* command)
 
   // Loop through again, printing each option this time
   for (int i = 0; i < CLI_MAX_OPTIONS; i++) {
+    g_autoptr(Lines) lines = NULL;
+
     if (command->options[i].long_name == NULL)
       break;
 
@@ -358,15 +361,44 @@ gchar* get_help_from_command(Command* command)
     gsize len = strlen(left_text);
     g_free(left_text);
 
-    gsize padding = 8 + longest_option - len;
+    guint padding = 8 + longest_option - len;
     while (padding--)
       g_string_append_c(string, ' ');
 
-    // TODO Line-wrapping
-    gint left_index = 8 + longest_option;
-    gint right_index =
-        120;  // FIXME use get_columns(), but cache it outside the loop
+    // Line-wrapping
+    guint left_index     = 8 + longest_option;
+    guint right_index    = columns - 2;
     gint chars_per_line = right_index - left_index;
+
+    if (chars_per_line < 15) {
+      // Give up on manual line wrapping if each line is going to be less than
+      // 15 chars
+      goto nowrapping;
+    }
+
+    lines = wrap_lines(command->options[i].description, chars_per_line, TRUE);
+    if (lines->len < 2) {
+      // If we only wrapped into one line (or there was an error and we didn't
+      // wrap any lines), then don't bother looping through the result, just go
+      // ahead and print the description
+      goto nowrapping;
+    }
+
+    for (gsize j = 0; j < lines->len; j++) {
+      // For subsequent lines, insert padding
+      if (j) {
+        padding = left_index;
+        while (padding--)
+          g_string_append_c(string, ' ');
+      }
+      g_string_append(string, lines->array[j]);
+      g_string_append_c(string, '\n');
+    }
+
+    // End the loop iteration here... We might jump past to 'nowrapping' in
+    // some scenarios.
+    continue;
+  nowrapping:
     g_string_append(string, command->options[i].description);
     g_string_append_c(string, '\n');
   }

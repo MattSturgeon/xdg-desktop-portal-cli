@@ -38,8 +38,7 @@ static Command install_command = {
                 G_OPTION_ARG_NONE,
                 &name_editable,
                 "Whether or not the user will be able edit the name of the "
-                "desktop "
-                "entry. Used when installing a new desktop entry.",
+                "desktop entry. Used when installing a new desktop entry.",
                 NULL,
             },
             {
@@ -49,9 +48,7 @@ static Command install_command = {
                 G_OPTION_ARG_FILENAME,
                 &icon_filename,
                 "Path to an app icon. Either the icon to use when installing, "
-                "or "
-                "the "
-                "path to save the icon when running geticon.",
+                "or the path to save the icon when running geticon.",
                 "FILE",
             },
             {
@@ -61,8 +58,7 @@ static Command install_command = {
                 G_OPTION_ARG_STRING,
                 &entry_name,
                 "The name of the dekstop entry. Used when installing a new "
-                "desktop "
-                "entry.",
+                "desktop entry.",
                 "NAME",
             },
             {
@@ -72,11 +68,8 @@ static Command install_command = {
                 G_OPTION_ARG_STRING,
                 &entry_content,
                 "The actual content of the desktop entry. Used when installing "
-                "a "
-                "new "
-                "desktop entry. Some parts may be replaced or edited by the "
-                "portal,\n"
-                "                           in particular Icon, Name and Exec.",
+                "a new desktop entry. Some parts may be replaced or edited by "
+                "the portal, in particular Icon, Name and Exec.",
                 "CONTENT",
             },
             {NULL},
@@ -86,8 +79,8 @@ static Command install_command = {
 static Command uninstall_command = {
     .name = "uninstall",
     .help_text =
-        "TODO: copy from docs... removes a "
-        "desktop entry from the host system...",
+        "TODO: copy from docs... removes a desktop entry from the host "
+        "system...",
     .options =
         {
             // TODO
@@ -98,8 +91,7 @@ static Command uninstall_command = {
 static Command get_command = {
     .name = "get",
     .help_text =
-        "TODO: copy from docs... gets a desktop entry "
-        "from the host system...",
+        "TODO: copy from docs... gets a desktop entry from the host system...",
     .options =
         {
             // TODO
@@ -122,8 +114,8 @@ static Command get_icon_command = {
 static Command launch_command = {
     .name = "launch",
     .help_text =
-        "TODO: copy from docs... runs a desktop "
-        "entry found on the host system...",
+        "TODO: copy from docs... runs a desktop entry found on the host "
+        "system...",
     .options =
         {
             // TODO
@@ -135,8 +127,8 @@ Portal dynamic_launcher_portal = {
     .name    = "dynamic-launcher",
     .aliases = {"launcher", "desktop-entry"},
     .help_text =
-        "TODO: Copy paste from docs... describe "
-        "what the dynamic-launcher portal does...",
+        "TODO: Copy paste from docs... describe what the dynamic-launcher "
+        "portal does...",
     .commands =
         {
             &install_command,
