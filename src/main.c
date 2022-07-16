@@ -129,6 +129,14 @@ gint main(gint argc, gchar* argv[])
     goto success;
   }
 
+  // Now we have a command, parse its options
+  g_option_context_set_ignore_unknown_options(context, FALSE);
+  g_option_context_add_main_entries(context, command->options, NULL);
+  if (!g_option_context_parse(context, &argc, &argv, &error)) {
+    g_printerr("%s\n", error->message);
+    return EXIT_FAILURE;
+  }
+
   // Get an instance of XdgPortal
   init_xdg_portal();
 

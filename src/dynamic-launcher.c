@@ -276,21 +276,41 @@ GVariant* load_icon(char* filename, GError** error)
 
 gint dynamic_launcher_install(gint argc, gchar* argv[])
 {
-  GError* error            = NULL;
-  gchar*  desktop_entry_id = NULL;
+  GError*  error            = NULL;
+  gchar*   desktop_entry_id = NULL;
+  gboolean valid            = TRUE;
 
+  // Check for valid arguments
   if (argc < 1) {
     g_printerr("desktop_entry filename not specified\n");
-    return EXIT_FAILURE;
+    valid = FALSE;
   }
-  desktop_entry_id = argv[0];
-  if (!str_ends_with(desktop_entry_id, ".desktop")) {
-    g_printerr("desktop_entry filename must end with \"%s\"\n", ".desktop");
-    return EXIT_FAILURE;
+
+  if (valid) {
+    desktop_entry_id = argv[0];
+    if (!str_ends_with(desktop_entry_id, ".desktop")) {
+      g_printerr("desktop_entry filename must end with \"%s\"\n", ".desktop");
+      valid = FALSE;
+    }
   }
 
   // Check for valid options
-  // TODO - name, filename, etc must be set
+  if (icon_filename == NULL) {
+    g_printerr("icon filename not provided\n");
+    valid = FALSE;
+  }
+  if (entry_name == NULL) {
+    g_printerr("entry name not provided\n");
+    valid = FALSE;
+  }
+  if (entry_content == NULL) {
+    g_printerr("entry content not provided\n");
+    valid = FALSE;
+  }
+
+  if (!valid)
+    return EXIT_FAILURE;
+
   // TODO check for up to one option bein "-" (read from stdin)
 
   // Populate callback data
