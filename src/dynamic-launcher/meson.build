@@ -1,0 +1,6 @@
+sources += files('portal.c')
+sources += files('install.c')
+sources += files('uninstall.c')
+sources += files('get.c')
+sources += files('get-icon.c')
+sources += files('launch.c')

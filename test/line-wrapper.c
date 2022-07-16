@@ -1,6 +1,6 @@
 #include "config.h"
 
-#include "../src/line-wrapper.h"
+#include "line-wrapper.h"
 
 #include <glib.h>
 #include <locale.h>

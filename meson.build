@@ -25,6 +25,8 @@ add_project_arguments([
   '-I' + meson.project_build_root(),
 ], language: 'c')
 
+include = include_directories('include')
+
 subdir('data')
 subdir('src')
 subdir('test')

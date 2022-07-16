@@ -1,10 +1,9 @@
+
 #include "dynamic-launcher.h"
-
-#include "command.h"
 #include "event-loop.h"
+#include "util/icon.h"
+#include "util/unused.h"
 #include "xdg-portal.h"
-
-#define UNUSED(x) x __attribute__((__unused__))
 
 static gboolean icon_editable = FALSE;
 static gboolean name_editable = FALSE;
@@ -12,7 +11,10 @@ static gchar*   icon_filename = NULL;
 static gchar*   entry_name    = NULL;
 static gchar*   entry_content = NULL;
 
-static Command install_command = {
+// Forward declare so we can use it in the install_command struct
+gint dynamic_launcher_install(gint argc, gchar* argv[]);
+
+Command install_command = {
     .name  = "install",
     .usage = "<desktop_file_name>",
     .help_text =
@@ -73,69 +75,6 @@ static Command install_command = {
                 "CONTENT",
             },
             {NULL},
-        },
-};
-
-static Command uninstall_command = {
-    .name = "uninstall",
-    .help_text =
-        "TODO: copy from docs... removes a desktop entry from the host "
-        "system...",
-    .options =
-        {
-            // TODO
-            {NULL},
-        },
-};
-
-static Command get_command = {
-    .name = "get",
-    .help_text =
-        "TODO: copy from docs... gets a desktop entry from the host system...",
-    .options =
-        {
-            // TODO
-            {NULL},
-        },
-};
-
-static Command get_icon_command = {
-    .name = "get_icon",
-    .help_text =
-        "TODO: copy from docs... gets the icon from a desktop entry on the "
-        "host system...",
-    .options =
-        {
-            // TODO
-            {NULL},
-        },
-};
-
-static Command launch_command = {
-    .name = "launch",
-    .help_text =
-        "TODO: copy from docs... runs a desktop entry found on the host "
-        "system...",
-    .options =
-        {
-            // TODO
-            {NULL},
-        },
-};
-
-Portal dynamic_launcher_portal = {
-    .name    = "dynamic-launcher",
-    .aliases = {"launcher", "desktop-entry"},
-    .help_text =
-        "TODO: Copy paste from docs... describe what the dynamic-launcher "
-        "portal does...",
-    .commands =
-        {
-            &install_command,
-            &uninstall_command,
-            &get_command,
-            &get_icon_command,
-            &launch_command,
         },
 };
 
@@ -230,48 +169,6 @@ static void install_callback(void*                UNUSED(source),
           data->desktop_entry_id);
   free(data);
   finish_loop();
-}
-
-// Loads the icon into memory and serializes it into a GVariant
-GVariant* load_icon(char* filename, GError** error)
-{
-  // Load the icon
-  // TODO add some checks to make sure we don't load a ridiculously big icon
-  // into memory
-  GError* internal_error = NULL;
-  gchar*  etag;
-  GFile*  file  = g_file_new_for_path(filename);
-  GBytes* bytes = g_file_load_bytes(file, NULL, &etag, &internal_error);
-  if (internal_error != NULL) {
-    g_printerr("Error loading file into memory: %s\n", internal_error->message);
-    *error = internal_error;
-
-    g_bytes_unref(bytes);
-    g_object_unref(file);
-    return NULL;
-  }
-  g_print("File loaded... etag: %s\n", etag);
-  g_print("%ld bytes read\n", g_bytes_get_size(bytes));
-
-  // Serialize the icon
-  GIcon* icon = g_bytes_icon_new(bytes);
-  if (icon == NULL) {
-    g_printerr("Error loading file as icon...\n");
-    // TODO set returned error
-
-    g_bytes_unref(bytes);
-    g_object_unref(file);
-    return NULL;
-  }
-  GVariant* serialized_icon = g_icon_serialize(icon);
-
-  g_print("Icon serialized successfully\n");
-
-  g_object_unref(icon);
-  g_bytes_unref(bytes);
-  g_object_unref(file);
-
-  return serialized_icon;
 }
 
 gint dynamic_launcher_install(gint argc, gchar* argv[])
