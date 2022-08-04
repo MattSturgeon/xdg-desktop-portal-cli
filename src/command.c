@@ -1,5 +1,6 @@
 #include "command.h"
 
+#include <string.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 
@@ -10,10 +11,67 @@ static Portal* cli_sturcture[] = {
     &dynamic_launcher_portal,
 };
 
+guint get_columns()
+{
+  struct winsize ws;
+  ioctl(STDIN_FILENO, TIOCGWINSZ, &ws);
+  return ws.ws_col;
+}
+
+static void append_wrapped_text(GString*     string,
+                                const gchar* text,
+                                guint        left,
+                                guint        right,
+                                gboolean     indent_first_line)
+{
+  guint padding;
+  g_autoptr(Lines) lines = NULL;
+  gint chars_per_line    = right - left;
+
+  if (indent_first_line) {
+    padding = left;
+    while (padding--)
+      g_string_append_c(string, ' ');
+  }
+
+  if (chars_per_line < 15) {
+    // Give up on manual line wrapping if each line is going to be less than
+    // 15 chars
+    goto nowrapping;
+  }
+
+  lines = wrap_lines(text, chars_per_line, TRUE);
+  if (lines->len < 2) {
+    // If we only wrapped into one line (or there was an error and we didn't
+    // wrap any lines), then don't bother looping through the result, just go
+    // ahead and print the description
+    goto nowrapping;
+  }
+
+  for (gsize j = 0; j < lines->len; j++) {
+    // For subsequent lines, insert padding
+    if (j) {
+      padding = left;
+      while (padding--)
+        g_string_append_c(string, ' ');
+    }
+    g_string_append(string, lines->array[j]);
+    g_string_append_c(string, '\n');
+  }
+
+  // Return here... We might jump past to 'nowrapping' in
+  // some scenarios.
+  return;
+nowrapping:
+  g_string_append(string, text);
+  g_string_append_c(string, '\n');
+}
+
 gchar* get_help()
 {
   // FIXME get from argv - maybe set a global in main.c?
   gchar* prog_name          = "xdg-portal";
+  guint  columns            = get_columns();
   g_autoptr(GString) string = NULL;
   string                    = g_string_sized_new(512);
 
@@ -55,7 +113,7 @@ gchar* get_help()
 
     g_string_append_printf(string, "  %s", cli_sturcture[i]->name);
 
-    gsize len     = strlen(cli_sturcture[i]->name);
+    gsize len     = 2 + strlen(cli_sturcture[i]->name);
     gsize padding = 8 + longest_portal - len;
 
     while (padding) {
@@ -63,7 +121,11 @@ gchar* get_help()
       g_string_append_c(string, ' ');
     }
 
-    g_string_append(string, cli_sturcture[i]->help_text);
+    append_wrapped_text(string,
+                        cli_sturcture[i]->help_text,
+                        8 + longest_portal,
+                        columns - 4,
+                        FALSE);
     g_string_append_c(string, '\n');
 
     for (int j = 0; j < CLI_MAX_ALIASES; j++) {
@@ -92,12 +154,13 @@ gchar* get_help()
   g_string_append(string, "\nFooter text here?\n");
 
   // Copy retult into heap memory so we can free the GString
-  gchar* return_string = malloc(string->len);
+  gchar* return_string = malloc(sizeof(gchar) * (string->len + 1));
   if (return_string == NULL) {
     g_printerr("Error assigning memory to get_help_from_portal's return value");
     return NULL;
   }
-  memcpy(return_string, string->str, string->len);
+  strncpy(return_string, string->str, string->len);
+  return_string[string->len] = '\0';
   return return_string;
 }
 
@@ -132,6 +195,7 @@ gchar* get_help_from_portal(Portal* portal)
 {
   gchar* prog_name =
       "xdg-portal";  // FIXME get from argv - maybe set a global in main.c?
+  guint columns             = get_columns();
   g_autoptr(GString) string = NULL;
   string                    = g_string_sized_new(512);
 
@@ -178,7 +242,7 @@ gchar* get_help_from_portal(Portal* portal)
 
     g_string_append_printf(string, "  %s", portal->commands[i]->name);
 
-    gsize len     = strlen(portal->commands[i]->name);
+    gsize len     = 2 + strlen(portal->commands[i]->name);
     gsize padding = 8 + longest_command - len;
 
     while (padding) {
@@ -186,7 +250,11 @@ gchar* get_help_from_portal(Portal* portal)
       g_string_append_c(string, ' ');
     }
 
-    g_string_append(string, portal->commands[i]->help_text);
+    append_wrapped_text(string,
+                        portal->commands[i]->help_text,
+                        8 + longest_command,
+                        columns - 4,
+                        FALSE);
     g_string_append_c(string, '\n');
 
     for (int j = 0; j < CLI_MAX_ALIASES; j++) {
@@ -215,12 +283,13 @@ gchar* get_help_from_portal(Portal* portal)
   g_string_append(string, "\nFooter text here?\n");
 
   // Copy retult into heap memory so we can free the GString
-  gchar* return_string = malloc(string->len);
+  gchar* return_string = malloc(sizeof(gchar) * (string->len + 1));
   if (return_string == NULL) {
     g_printerr("Error assigning memory to get_help_from_portal's return value");
     return NULL;
   }
-  memcpy(return_string, string->str, string->len);
+  strncpy(return_string, string->str, string->len);
+  return_string[string->len] = '\0';
   return return_string;
 }
 
@@ -255,12 +324,13 @@ gchar* get_option_left_text(GOptionEntry* option)
   g_string_append_c(string, '\0');
 
   // Copy retult into heap memory so we can free the GString
-  gchar* return_string = malloc(string->len);
+  gchar* return_string = malloc(sizeof(gchar) * (string->len + 1));
   if (return_string == NULL) {
     g_printerr("Error assigning memory to get_option_left_text's return value");
     return NULL;
   }
-  memcpy(return_string, string->str, string->len);
+  strncpy(return_string, string->str, string->len);
+  return_string[string->len] = '\0';
   return return_string;
 }
 
@@ -287,13 +357,6 @@ Command* get_command_from_string(Portal* portal, gchar* command_string)
     }
   }
   return NULL;
-}
-
-guint get_columns()
-{
-  struct winsize ws;
-  ioctl(STDIN_FILENO, TIOCGWINSZ, &ws);
-  return ws.ws_col;
 }
 
 Portal* get_command_owner(Command* command)
@@ -366,52 +429,23 @@ gchar* get_help_from_command(Command* command)
       g_string_append_c(string, ' ');
 
     // Line-wrapping
-    guint left_index     = 8 + longest_option;
-    guint right_index    = columns - 2;
-    gint  chars_per_line = right_index - left_index;
-
-    if (chars_per_line < 15) {
-      // Give up on manual line wrapping if each line is going to be less than
-      // 15 chars
-      goto nowrapping;
-    }
-
-    lines = wrap_lines(command->options[i].description, chars_per_line, TRUE);
-    if (lines->len < 2) {
-      // If we only wrapped into one line (or there was an error and we didn't
-      // wrap any lines), then don't bother looping through the result, just go
-      // ahead and print the description
-      goto nowrapping;
-    }
-
-    for (gsize j = 0; j < lines->len; j++) {
-      // For subsequent lines, insert padding
-      if (j) {
-        padding = left_index;
-        while (padding--)
-          g_string_append_c(string, ' ');
-      }
-      g_string_append(string, lines->array[j]);
-      g_string_append_c(string, '\n');
-    }
-
-    // End the loop iteration here... We might jump past to 'nowrapping' in
-    // some scenarios.
-    continue;
-  nowrapping:
-    g_string_append(string, command->options[i].description);
-    g_string_append_c(string, '\n');
+    append_wrapped_text(string,
+                        command->options[i].description,
+                        8 + longest_option,
+                        columns - 4,
+                        FALSE);
   }
 
   g_string_append(string, "\nFooter text here?\n");
 
   // Copy retult into heap memory so we can free the GString
-  gchar* return_string = malloc(string->len);
+  gchar* return_string = malloc(sizeof(gchar) * (string->len + 1));
   if (return_string == NULL) {
     g_printerr("Error assigning memory to get_help_from_portal's return value");
     return NULL;
   }
-  memcpy(return_string, string->str, string->len);
+  strncpy(return_string, string->str, string->len);
+  return_string[string->len] = '\0';
   return return_string;
 }
 
