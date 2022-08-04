@@ -1,13 +1,22 @@
 #include "dynamic-launcher.h"
 
+gint uninstall_command_handler(gint argc, gchar* argv[]);
+
 Command uninstall_command = {
-    .name = "uninstall",
+    .name    = "uninstall",
+    .handler = uninstall_command_handler,
+    .usage   = "<desktop_file_name>",
     .help_text =
-        "TODO: copy from docs... removes a desktop entry from the host "
-        "system...",
+        "Removes the desktop file and corresponding icon from the appropriate "
+        "directories to remove the launcher referred to by.",
     .options =
         {
-            // TODO
             {NULL},
         },
 };
+
+gint uninstall_command_handler(gint argc, gchar* argv[])
+{
+  g_printerr("uninstall command not yet implemented!\n");
+  return EXIT_FAILURE;
+}

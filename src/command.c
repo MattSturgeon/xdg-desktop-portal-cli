@@ -368,7 +368,7 @@ gchar* get_help_from_command(Command* command)
     // Line-wrapping
     guint left_index     = 8 + longest_option;
     guint right_index    = columns - 2;
-    gint chars_per_line = right_index - left_index;
+    gint  chars_per_line = right_index - left_index;
 
     if (chars_per_line < 15) {
       // Give up on manual line wrapping if each line is going to be less than

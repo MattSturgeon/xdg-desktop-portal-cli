@@ -1,4 +1,3 @@
-
 #include "dynamic-launcher.h"
 #include "event-loop.h"
 #include "util/icon.h"
@@ -11,16 +10,21 @@ static gchar*   icon_filename = NULL;
 static gchar*   entry_name    = NULL;
 static gchar*   entry_content = NULL;
 
-// Forward declare so we can use it in the install_command struct
-gint dynamic_launcher_install(gint argc, gchar* argv[]);
+gint install_command_handler(gint argc, gchar* argv[]);
 
 Command install_command = {
-    .name  = "install",
-    .usage = "<desktop_file_name>",
+    .name    = "install",
+    .handler = &install_command_handler,
+    .usage   = "<desktop_file_name>",
     .help_text =
-        "TODO: copy from docs... installs a desktop entry onto the host "
-        "system...",
-    .handler = &dynamic_launcher_install,
+        "Install a new desktop file and icon into the appropriate directories "
+        "to allow the desktop environment to find them. A dialog is shown to "
+        "the user asking them to confirm installing the desktop file.\n"
+        "Note that any existing desktop file with the same name will be "
+        "overwritten, use the get command to check if one already exists.\n"
+        "The desktop_file_name must have \".desktop\" as a suffix. Except in "
+        "the special case when the calling process has no associated app ID,"
+        "desktop_file_name must start with the app ID followed by a period.",
     .options =
         {
             {
@@ -43,6 +47,7 @@ Command install_command = {
                 "desktop entry. Used when installing a new desktop entry.",
                 NULL,
             },
+            // TODO support base64 icon input
             {
                 "icon-file",
                 'i',
@@ -80,7 +85,6 @@ Command install_command = {
 
 // Datatype used to pass data from install() to install_callback()
 typedef struct _InstallCallbackData {
-  // TODO Consider what data needs to be passed to callback(s)
   gchar* desktop_entry_id;
   gchar* desktop_entry_content;
 } InstallCallbackData;
@@ -171,7 +175,7 @@ static void install_callback(void*                UNUSED(source),
   finish_loop();
 }
 
-gint dynamic_launcher_install(gint argc, gchar* argv[])
+gint install_command_handler(gint argc, gchar* argv[])
 {
   GError*  error            = NULL;
   gchar*   desktop_entry_id = NULL;

@@ -12,8 +12,14 @@ Portal dynamic_launcher_portal = {
     .name    = "dynamic-launcher",
     .aliases = {"launcher", "desktop-entry"},
     .help_text =
-        "TODO: Copy paste from docs... describe what the dynamic-launcher "
-        "portal does...",
+        "The DynamicLauncher portal allows sandboxed (or unsandboxed) "
+        "applications to install launchers (.desktop files) which have an icon "
+        "associated with them and which execute a command in the application. "
+        "The desktop environment would display the launcher to the user in its "
+        "menu of installed applications. For example this can be used by a "
+        "sandboxed browser to install web app launchers. The portal also "
+        "allows apps to uninstall the launchers, launch them, and read the "
+        "desktop file and icon data for them.",
     .commands =
         {
             &install_command,

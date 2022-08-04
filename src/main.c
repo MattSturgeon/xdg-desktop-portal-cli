@@ -141,7 +141,6 @@ gint main(gint argc, gchar* argv[])
   init_xdg_portal();
 
   // Finally, run the command
-  // FIXME this will segfault since I haven't defined any command handlers yet
   gint status = call_command_handler(command, copy_len - 1, &copy[1]);
 
   // create an event loop if needed
